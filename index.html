@@ -208,7 +208,7 @@ h("div",{style:"display:flex;align-items:center;gap:8px"},cnt,h("span",{cls:"sp"
 ta.addEventListener("input",()=>{const n=lines().length;cnt.textContent=n?n+" node"+(n===1?"":"s"):""});ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();go()}});
 ov.addEventListener("pointerdown",e=>{if(e.target===ov)close()});document.body.append(ov);document.addEventListener("keydown",kh,true);ta.focus()}
 function openFind(){if($("pm"))return;const prev=document.activeElement,sel=()=>S.sel?[S.sel]:[...S.ms],ns0=sel().length,close=()=>{document.removeEventListener("keydown",kh,true);ov.remove();if(prev&&prev.focus)prev.focus()},kh=e=>{if(e.key==="Escape"&&!$("mdl")){e.preventDefault();e.stopPropagation();close()}},
-ck=(t,on,dis)=>{const i=h("input",{type:"checkbox"});i.checked=on;i.disabled=!!dis;i.addEventListener("change",upd);return[i,h("label",{style:"flex-direction:row;align-items:center;gap:6px;margin:0;color:var(--tx);font-size:12px"},i,t)]},
+ck=(t,on,dis)=>{const i=h("input",{type:"checkbox"});i.checked=on;i.disabled=!!dis;i.addEventListener("change",()=>upd());return[i,h("label",{style:"flex-direction:row;align-items:center;gap:6px;margin:0;color:var(--tx);font-size:12px"},i,t)]},
 fi=h("input",{placeholder:"Find","aria-label":"Find"}),ri=h("input",{placeholder:"Replace with","aria-label":"Replace with"}),
 [cS,lS]=ck("Selected nodes only"+(ns0?" ("+ns0+")":""),ns0>0,!ns0),[cC,lC]=ck("Match case",false),[cW,lW]=ck("Whole word",false),[cN,lN]=ck("Names",true),[cP,lP]=ck("Property values",false),[cT,lT]=ck("Notes",false),
 st=h("span",{cls:"mu"}),bt=h("button",{style:"background:var(--ac);color:var(--onAc);font-weight:600"},"Replace all"),
