@@ -190,9 +190,12 @@ const row=()=>tb.replaceChildren(h("button",{cls:S.theme==="dark"?"on":"",on:{cl
 const pb=h("div",{style:"display:flex;gap:4px"}),setPF=v=>{S.pinFollow=v;try{localStorage.setItem("federationGraph.pinFollow",v?"1":"0")}catch(e){}pf()},
 pf=()=>pb.replaceChildren(h("button",{cls:!S.pinFollow?"on":"","aria-pressed":String(!S.pinFollow),title:"Pins stay where they are while you drag a node",on:{click:()=>setPF(false)}},"Stay"),h("button",{cls:S.pinFollow?"on":"","aria-pressed":String(!!S.pinFollow),title:"Pins move with the node's wire while you drag a node",on:{click:()=>setPF(true)}},"Follow")),
 prow=h("div",{style:"display:flex;align-items:center;gap:10px;margin-top:12px"},h("span",{style:"flex:1",title:"Applies when dragging a single node. Locked pins never move; moving several nodes or a group moves pins with them."},"Wire pins when moving one node"),pb);pf();
+const tick=(txt,ttl,get,set)=>{const i=h("input",{type:"checkbox"});i.checked=!!get();i.addEventListener("change",()=>set(i.checked));return[i,h("label",{title:ttl,style:"flex-direction:row;align-items:center;gap:8px;margin:12px 0 0;color:var(--tx);font-size:13px;cursor:pointer"},i,txt)]},
+[qi,qrow]=tick("In/out ports on nodes","Every node side gets one in and one out port; wires use them so you can see what comes in and what goes out",()=>S.ports,v=>{S.ports=v;try{localStorage.setItem("federationGraph.ports",v?"1":"0")}catch(e){}sp.disabled=!v;draw()}),
+[sp,srow]=tick("Spread wires that share a port","Unticked: wires on the same in or out port overlap. Ticked: they fan out side by side",()=>S.spread,v=>{S.spread=v;try{localStorage.setItem("federationGraph.spread",v?"1":"0")}catch(e){}draw()});sp.disabled=!S.ports;
 const ov=h("div",{id:"pm",role:"dialog","aria-modal":"true","aria-label":"Settings"},h("div",{cls:"box",style:"width:min(420px,94vw)"},
 h("div",{style:"display:flex;align-items:center;margin-bottom:14px"},h("b",{style:"font-size:15px;flex:1"},"Settings"),h("button",{on:{click:close}},"Close")),
-h("div",{style:"display:flex;align-items:center;gap:10px"},h("span",{style:"flex:1"},"Theme"),tb),prow));
+h("div",{style:"display:flex;align-items:center;gap:10px"},h("span",{style:"flex:1"},"Theme"),tb),prow,qrow,srow));
 ov.addEventListener("pointerdown",e=>{if(e.target===ov)close()});document.body.append(ov);document.addEventListener("keydown",kh,true)}
 function openBulk(){if($("pm"))return;const prev=document.activeElement,close=()=>{document.removeEventListener("keydown",kh,true);ov.remove();if(prev&&prev.focus)prev.focus()},kh=e=>{if(e.key==="Escape"&&!$("mdl")){e.preventDefault();e.stopPropagation();close()}},
 ta=h("textarea",{rows:9,placeholder:"One node per line\nTower C Architecture\nTower C Structure | model\nShared Survey | reference",style:"width:100%;font-family:ui-monospace,Menlo,Consolas,monospace"}),
@@ -298,8 +301,8 @@ pinRel=(a,b,x,y)=>{const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,rx=x-a.x,r
 cleanPins=a=>(Array.isArray(a)?a:[]).slice(0,40).filter(p=>p&&typeof p==="object").map(p=>p.lk?{x:+p.x||0,y:+p.y||0,lk:1}:{u:+p.u||0,v:+p.v||0}),
 pinSp=l=>l.pins&&l.pins.length?{pins:cleanPins(l.pins)}:{};
 function pgeo(a,b,na,l){const Q=l.pins.map(p=>pinAbs(a,b,p)),q0=Q[0],qn=Q[Q.length-1],gap=na?0:4;let P;
-if(!S.curve){P=[edge(a,q0[0],q0[1],0),...Q,edge(b,qn[0],qn[1],gap)];const m=P.length>>1,o=P.length%2;return{t:"path",a:{d:"M"+P.map(q=>q[0]+","+q[1]).join(" L")},mx:o?P[m][0]:(P[m-1][0]+P[m][0])/2,my:o?P[m][1]:(P[m-1][1]+P[m][1])/2,pts:P,pp:Q}}
-const sa=l.fp&&SIDE[l.fp]?l.fp:sgs(a,{x:q0[0],y:q0[1]})[0],sb=l.tp&&SIDE[l.tp]?l.tp:sgs({x:qn[0],y:qn[1]},b)[1],va=SIDE[sa],vb=SIDE[sb],A=portPt(a,sa),B=portPt(b,sb);
+if(!S.curve){if(S.ports){const[sa,sb]=linkSides(l,a,b),vb=SIDE[sb],A=portAt(a,sa,"o",l),B=portAt(b,sb,"i",l);P=[A,...Q,[B[0]+vb[0]*gap,B[1]+vb[1]*gap]]}else P=[edge(a,q0[0],q0[1],0),...Q,edge(b,qn[0],qn[1],gap)];const m=P.length>>1,o=P.length%2;return{t:"path",a:{d:"M"+P.map(q=>q[0]+","+q[1]).join(" L")},mx:o?P[m][0]:(P[m-1][0]+P[m][0])/2,my:o?P[m][1]:(P[m-1][1]+P[m][1])/2,pts:P,pp:Q}}
+const[sa,sb]=linkSides(l,a,b),va=SIDE[sa],vb=SIDE[sb],A=portAt(a,sa,"o",l),B=portAt(b,sb,"i",l);
 P=[A,...Q,[B[0]+vb[0]*gap,B[1]+vb[1]*gap]];const n=P.length-1;let d="M"+P[0],pts=[];
 for(let i=0;i<n;i++){const k=Math.max(30,Math.hypot(P[i+1][0]-P[i][0],P[i+1][1]-P[i][1])*.5);
 const c1=i?[P[i][0]+(P[i+1][0]-P[i-1][0])/6,P[i][1]+(P[i+1][1]-P[i-1][1])/6]:[P[0][0]+va[0]*k,P[0][1]+va[1]*k],
@@ -321,11 +324,19 @@ return[h("div",{cls:"mu",style:"font-size:11px;margin:4px 0 6px"},"Pins"+(ps.len
 h("div",{style:"display:flex;gap:2px;margin-bottom:6px"},h("button",{title:"Add a pin on the wire, then drag it on the canvas (Shift snaps to 10px)",on:{click:()=>addPin(l)}},"+ Add pin"),ps.length?h("button",{title:"Remove all pins",on:{click:()=>{delete l.pins;save();render()}}},"Clear"):null),
 ...ps.map((p,i)=>h("div",{cls:"kv",style:"align-items:center"},h("span",{cls:"mu",style:"flex:1"},"Pin "+(i+1)),h("button",{cls:p.lk?"on":"",title:p.lk?"Locked to the canvas. Click to make it follow the nodes":"Follows the nodes. Click to lock it to the canvas",on:{click:()=>lock(i)}},p.lk?"Locked":"Follows"),h("button",{cls:"dg",title:"Remove pin",on:{click:()=>rm(i)}},"✕"))),
 h("div",{style:"height:10px"})]}
-function geo(a,b,off,na,l){if(l&&l.pins&&l.pins.length)return pgeo(a,b,na,l);off=off||0;const[px,py]=pp(a,b);if(!S.curve){const p1=edge(a,b.x,b.y,0),p2=edge(b,a.x,a.y,na?0:4);
+// in/out ports: every side of a node has one "in" and one "out" location; all wires entering/leaving that side share it (they overlap)
+let PORTS=new Map,PCNT=new Map;
+function linkSides(l,a,b){if(l.pins&&l.pins.length){const Q=l.pins.map(p=>pinAbs(a,b,p)),q0=Q[0],qn=Q[Q.length-1];return[SIDE[l.fp]?l.fp:sgs(a,{x:q0[0],y:q0[1]})[0],SIDE[l.tp]?l.tp:sgs({x:qn[0],y:qn[1]},b)[1]]}const au=sgs(a,b);return[SIDE[l.fp]?l.fp:au[0],SIDE[l.tp]?l.tp:au[1]]}
+function buildPorts(){PORTS=new Map;PCNT=new Map;if(!S.ports)return;const G=new Map,add=(n,sd,kd,l,o)=>{const key=n.id+"|"+sd+"|"+kd;let r=G.get(key);if(!r)G.set(key,r=[]);r.push({l,o,kd})};
+S.d.links.forEach(l=>{const a=N(l.from),b=N(l.to);if(!a||!b)return;const[sa,sb]=linkSides(l,a,b);add(a,sa,"o",l,SIDE[sa][0]?b.y:b.x);add(b,sb,"i",l,SIDE[sb][0]?a.y:a.x)});
+G.forEach((r,key)=>{r.sort((p,q)=>p.o-q.o);PCNT.set(key,r.length);r.forEach((e,i)=>{let m=PORTS.get(e.l.id);if(!m)PORTS.set(e.l.id,m={});m[e.kd]={i,n:r.length}})})}
+function portAt(n,sd,kd,l){const[w,h]=dim(n),v=SIDE[sd],p=[n.x+v[0]*w,n.y+v[1]*h];if(!S.ports||!kd||n.kind==="image")return p;const half=v[0]?h:w,PO=Math.min(half*.5,22),e=PORTS.get(l&&l.id),sl=S.spread&&e&&e[kd],c=sl?sl.n:1,i=sl?sl.i:0,st=c>1?Math.min(7,PO*1.6/(c-1)):0,off=(kd==="o"?PO:-PO)+(i-(c-1)/2)*st;return v[0]?[p[0],p[1]+off]:[p[0]+off,p[1]]}
+function portMarks(g,n,sel){["l","r","t","b"].forEach(sd=>["i","o"].forEach(kd=>{const c=PCNT.get(n.id+"|"+sd+"|"+kd)||0;if(!c&&!sel)return;const p=portAt(n,sd,kd,null),v=SIDE[sd],t=[-v[1],v[0]],q=(f,m)=>(p[0]+v[0]*f+t[0]*m)+","+(p[1]+v[1]*f+t[1]*m),pts=kd==="o"?[q(-5,3.5),q(-5,-3.5),q(0,0)]:[q(0,3.5),q(0,-3.5),q(-5,0)],pl=s("polygon",{points:pts.join(" "),fill:c?T.ac:"none",stroke:c?"none":T.ln,"stroke-width":1,opacity:c?.95:.7,style:"pointer-events:none"});pl.append(s("title",{},(kd==="o"?"Out":"In")+" · "+({l:"left",r:"right",t:"top",b:"bottom"})[sd]+(c?" · "+c+" wire"+(c===1?"":"s"):"")));g.append(pl)}))}
+function geo(a,b,off,na,l){if(l&&l.pins&&l.pins.length)return pgeo(a,b,na,l);off=off||0;const[px,py]=pp(a,b);if(!S.curve){let p1,p2;if(S.ports){const[sa,sb]=linkSides(l||{},a,b),vb=SIDE[sb],q=portAt(b,sb,"i",l),gp=na?0:4;p1=portAt(a,sa,"o",l);p2=[q[0]+vb[0]*gp,q[1]+vb[1]*gp]}else{p1=edge(a,b.x,b.y,0);p2=edge(b,a.x,a.y,na?0:4)}
 if(off){const cx=(p1[0]+p2[0])/2+px*off*2,cy=(p1[1]+p2[1])/2+py*off*2;return{t:"path",a:{d:"M"+p1[0]+","+p1[1]+" Q"+cx+","+cy+" "+p2[0]+","+p2[1]},mx:(p1[0]+2*cx+p2[0])/4,my:(p1[1]+2*cy+p2[1])/4,pts:bz([p1,[cx,cy],p2],16)}}
 return{t:"line",a:{x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1]},mx:(p1[0]+p2[0])/2,my:(p1[1]+p2[1])/2,pts:bz([p1,p2],12)}}
 // curved ("noodle") wire: each end leaves/enters through a chosen side of its node (auto = facing the other node)
-const au=sgs(a,b),sa=l&&SIDE[l.fp]?l.fp:au[0],sb=l&&SIDE[l.tp]?l.tp:au[1],va=SIDE[sa],vb=SIDE[sb],gap=na?0:4,dx=b.x-a.x,dy=b.y-a.y,P1=portPt(a,sa),Q=portPt(b,sb),
+const[sa,sb]=linkSides(l||{},a,b),va=SIDE[sa],vb=SIDE[sb],gap=na?0:4,dx=b.x-a.x,dy=b.y-a.y,P1=portAt(a,sa,"o",l),Q=portAt(b,sb,"i",l),
 x1=P1[0],y1=P1[1],x2=Q[0]+vb[0]*gap,y2=Q[1]+vb[1]*gap,ka=Math.max(40,Math.abs(va[0]?dx:dy)*.5),kb=Math.max(40,Math.abs(vb[0]?dx:dy)*.5);
 let c1x=x1+va[0]*ka,c1y=y1+va[1]*ka,c2x=x2+vb[0]*kb,c2y=y2+vb[1]*kb;
 if(off){c1x+=px*off*1.33;c1y+=py*off*1.33;c2x+=px*off*1.33;c2y+=py*off*1.33}
@@ -373,17 +384,17 @@ if(X.hitL)g.append(s(gm.t,Object.assign({},gm.a,{fill:"none","data-link":l.id,st
 if(l.label&&(S.k>=.9||W.has(l.id)||(foc&&on)))g.append(s("text",{x:gm.mx,y:gm.my-5,"text-anchor":"middle","font-size":11,fill:lcol(l)||T.lt,style:"paint-order:stroke;stroke:"+T.bg+";stroke-width:4px;stroke-linejoin:round"},l.label));return g}
 function bNode(n,X){if(S.exp&&!S.exp.nodes.has(n.id))return null;const[a,b]=dim(n);if(!X.vis(n.x-a,n.y-b,n.x+a,n.y+b))return null;
 const{foc,hit}=X,on=(!foc||foc.has(n.id))&&hit(n)&&(!S.expHl||S.expHl.nodes.has(n.id)),sel=S.sel===n.id||S.ms.has(n.id)||!!(S.expHl&&S.expHl.mark.has(n.id)),src=S.from===n.id,simple=X.lod>0&&!n.kind&&!sel&&!src,g=s("g",simple?{"data-id":n.id,opacity:on?1:(S.expHl?.28:.15),style:"cursor:pointer","data-kind":"node"}:{"data-id":n.id,opacity:on?1:(S.expHl?.28:.15),style:"cursor:pointer",tabindex:0,role:"button","data-kind":n.kind||"node","aria-label":n.name+", "+(n.kind||n.type)});
-if(n.kind==="note"){noteDraw(g,n,a,b,sel);return g}
+if(n.kind==="note"){noteDraw(g,n,a,b,sel);if(S.ports&&X.lod<2)portMarks(g,n,sel);return g}
 if(n.kind==="image"){const[ia,ib]=idim(n);imgDraw(g,n,ia,ib,sel);return g}
 if(simple){g.append(s("rect",{x:n.x-a,y:n.y-b,width:2*a,height:2*b,rx:9,fill:n.nbg||T.nd,stroke:colOf(n),"stroke-width":2}));return g}
 g.append(s("rect",{x:n.x-a,y:n.y-b,width:2*a,height:2*b,rx:9,fill:n.nbg||T.nd,stroke:sel?T.sel:src?"#e8b04a":T.ns,"stroke-width":sel||src?2:1}),markEl(markOf(n),n.x-a+14,n.nbp==="m"?n.y:n.nbp==="b"?n.y+b-17:n.y-b+17,colOf(n)),
-S.ed===n.id?document.createComment(""):lab(n,a));if(S.sel===n.id&&!S.mode)g.append(s("circle",{cx:n.x+a,cy:n.y,r:6,fill:T.ac,stroke:T.bg,"stroke-width":2,"data-handle":n.id,style:"cursor:crosshair"}));return g}
+S.ed===n.id?document.createComment(""):lab(n,a));if(S.ports&&X.lod<2)portMarks(g,n,sel);if(S.sel===n.id&&!S.mode)g.append(s("circle",{cx:n.x+a,cy:n.y,r:6,fill:T.ac,stroke:T.bg,"stroke-width":2,"data-handle":n.id,style:"cursor:crosshair"}));return g}
 const tmpEl=()=>{const f=N(S.cf);if(!f||!S.tmp)return null;const q=edge(f,S.tmp[0],S.tmp[1],0);return s("line",{x1:q[0],y1:q[1],x2:S.tmp[0],y2:S.tmp[1],stroke:T.ac,"stroke-width":1.5,"stroke-dasharray":"5 4",style:"pointer-events:none"})};
 const boxEl=()=>{const b=S.box,win=b.x1>=b.x0,c=win?T.ac:"#7ed67e";return s("rect",{x:Math.min(b.x0,b.x1),y:Math.min(b.y0,b.y1),width:Math.abs(b.x1-b.x0),height:Math.abs(b.y1-b.y0),fill:c,"fill-opacity":.1,stroke:c,"stroke-width":1/S.k,"stroke-dasharray":win?"none":(5/S.k)+" "+(4/S.k),style:"pointer-events:none"})};
 // marquee / connect preview: update just that one element while dragging
 function ovUpdate(){const sync=(key,make,on)=>{const old=OV[key];if(!on){if(old){old.remove();OV[key]=null}return}const el=make();if(!el)return;if(old&&old.isConnected)old.replaceWith(el);else vp.append(el);OV[key]=el};sync("tmp",tmpEl,!!(S.tmp&&S.cf));sync("box",boxEl,!!S.box)}
 // dragging nodes/groups: rebuild only the moved nodes, their wires and the group frames around them
-function patchMoved(ids){const X=DX;if(!X||ids.size>150||S.exp)return false;return ixScope(()=>{
+function patchMoved(ids){const X=DX;if(!X||ids.size>150||S.exp)return false;buildPorts();return ixScope(()=>{
 if(!X.adj){X.adj=new Map;S.d.links.forEach(l=>{[l.from,l.to].forEach(i=>{let a=X.adj.get(i);if(!a){a=[];X.adj.set(i,a)}a.push(l)})})}
 const ls=new Set,gs=new Set,nodes=[];ids.forEach(id=>{const n=N(id);if(!n)return;nodes.push(n);(X.adj.get(id)||[]).forEach(l=>ls.add(l));let g=GR(n.gid),k=0;while(g&&k++<60){gs.add(g.id);g=g.pid?GR(g.pid):null}});
 if(S.dropG)gs.add(S.dropG);if(X.prevDrop&&X.prevDrop!==S.dropG)gs.add(X.prevDrop);X.prevDrop=S.dropG;
@@ -392,7 +403,7 @@ gs.forEach(id=>{const g=GR(id);if(g)swap(X.ge,id,bGroup(g,X),false,LY.o)});ls.fo
 function moveDraw(ids){if(!patchMoved(ids))drawSoon()}
 function draw(){if(rq){cancelAnimationFrame(rq);rq=0}ixScope(draw0)}
 let LY=null;const nlay=n=>n.kind==="note"?LY.t:n.kind?LY.o:LY.n;
-function draw0(){const ae=document.activeElement,fe=ae&&ae.closest&&vp.contains(ae)?ae.closest("[data-id]"):null,fid=fe?fe.dataset.id:null;vp.replaceChildren();applyView();
+function draw0(){buildPorts();const ae=document.activeElement,fe=ae&&ae.closest&&vp.contains(ae)?ae.closest("[data-id]"):null,fid=fe?fe.dataset.id:null;vp.replaceChildren();applyView();
 const X=mkCtx(),SS=X.SS;DX=X;OV.tmp=null;OV.box=null;
 const dp=new Map(G().map(g=>[g.id,gdepth(g)]));// draw order, top to bottom: nodes, notes, wires, everything else (group frames, images)
 LY={n:s("g",{}),t:s("g",{}),w:s("g",{}),o:s("g",{})};vp.append(LY.o,LY.w,LY.t,LY.n);
@@ -401,7 +412,7 @@ S.d.nodes.forEach(n=>{if(!n.kind)putN(n,LY.n)});S.d.nodes.forEach(n=>{if(n.kind=
 S.d.links.forEach(l=>{const el=bLink(l,X);if(el){LY.w.append(el);X.le.set(l.id,el)}});
 G().slice().sort((a,b)=>dp.get(a.id)-dp.get(b.id)).forEach(g=>{const el=bGroup(g,X);if(el){LY.o.append(el);X.ge.set(g.id,el)}});
 S.d.nodes.forEach(n=>{if(n.kind&&n.kind!=="note")putN(n,LY.o)});
-if(S.curve&&!SS.size&&S.wl.size<2&&S.selL){const l=S.d.links.find(x=>x.id===S.selL),a=l&&N(l.from),b=l&&N(l.to);if(a&&b){const au=sgs(a,b),k=Math.max(S.k,.7),r=5/k,ng=s("g",{});[[a,"fp",l.fp||au[0],"leaves from"],[b,"tp",l.tp||au[1],"enters at"]].forEach(([n,key,eff,verb])=>["l","r","t","b"].forEach(sd=>{const q=portPt(n,sd),on=sd===eff,at={fill:on?"#e8b04a":T.bg,stroke:"#e8b04a","stroke-width":1.5/k,"data-port":key+":"+sd,role:"button","aria-label":"Wire "+verb+" "+({l:"left",r:"right",t:"top",b:"bottom"})[sd]},e=key==="fp"?s("circle",Object.assign({cx:q[0],cy:q[1],r:on?r*1.2:r},at)):s("rect",Object.assign({x:q[0]-r,y:q[1]-r,width:2*r,height:2*r,rx:r*.35},at));e.append(s("title",{},"Wire "+verb+" "+({l:"left",r:"right",t:"top",b:"bottom"})[sd]));ng.append(e)}));vp.append(ng)}}
+if(S.curve&&!SS.size&&S.wl.size<2&&S.selL){const l=S.d.links.find(x=>x.id===S.selL),a=l&&N(l.from),b=l&&N(l.to);if(a&&b){const au=sgs(a,b),k=Math.max(S.k,.7),r=5/k,ng=s("g",{});[[a,"fp",l.fp||au[0],"leaves from"],[b,"tp",l.tp||au[1],"enters at"]].forEach(([n,key,eff,verb])=>["l","r","t","b"].forEach(sd=>{const q=portAt(n,sd,key==="fp"?"o":"i",null),on=sd===eff,at={fill:on?"#e8b04a":T.bg,stroke:"#e8b04a","stroke-width":1.5/k,"data-port":key+":"+sd,role:"button","aria-label":"Wire "+verb+" "+({l:"left",r:"right",t:"top",b:"bottom"})[sd]},e=key==="fp"?s("circle",Object.assign({cx:q[0],cy:q[1],r:on?r*1.2:r},at)):s("rect",Object.assign({x:q[0]-r,y:q[1]-r,width:2*r,height:2*r,rx:r*.35},at));e.append(s("title",{},"Wire "+verb+" "+({l:"left",r:"right",t:"top",b:"bottom"})[sd]));ng.append(e)}));vp.append(ng)}}
 if(!SS.size&&S.wl.size<2&&S.selL){const l=S.d.links.find(x=>x.id===S.selL);if(l&&l.pins&&l.pins.length){const g=lgeo(l);if(g&&g.pp){const k=Math.max(S.k,.7),r=6/k,ng=s("g",{});g.pp.forEach((q,i)=>{const lk=l.pins[i].lk,e=s("circle",{cx:q[0],cy:q[1],r,fill:lk?"#e8b04a":T.bg,stroke:"#e8b04a","stroke-width":2/k,"data-pin":l.id+":"+i,style:"cursor:grab"});e.append(s("title",{},"Pin "+(i+1)+(lk?" (locked)":" (follows nodes)")+" · drag to move"));ng.append(e)});vp.append(ng)}}}
 if(S.crop){const cn=N(S.crop);if(cn&&cn.kind==="image")cropOverlay(cn)}
 if(S.tmp&&S.cf){const e=tmpEl();if(e){vp.append(e);OV.tmp=e}}
@@ -897,7 +908,7 @@ rz.addEventListener("pointerdown",e=>{rz.setPointerCapture(e.pointerId);rd=true;
 rz.addEventListener("pointermove",e=>{if(rd)setW(innerWidth-e.clientX)});
 rz.addEventListener("pointerup",()=>{if(!rd)return;rd=false;rz.classList.remove("on");keepW(aside.getBoundingClientRect().width)});
 rz.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"||e.key==="ArrowRight"){e.preventDefault();keepW(setW(aside.getBoundingClientRect().width+(e.key==="ArrowLeft"?20:-20)))}});
-try{S.curve=localStorage.getItem("federationGraph.curve")==="1"}catch(e){}try{S.pinFollow=localStorage.getItem("federationGraph.pinFollow")==="1"}catch(e){}S.wl=S.wl||new Set();S.gl=new Set();S.wt=false;S.st="all";S.crop=null;try{new ResizeObserver(()=>drawSoon()).observe(cv)}catch(e){}
+try{S.curve=localStorage.getItem("federationGraph.curve")==="1"}catch(e){}try{S.pinFollow=localStorage.getItem("federationGraph.pinFollow")==="1"}catch(e){}S.ports=true;try{S.ports=localStorage.getItem("federationGraph.ports")!=="0"}catch(e){}S.spread=false;try{S.spread=localStorage.getItem("federationGraph.spread")==="1"}catch(e){}S.wl=S.wl||new Set();S.gl=new Set();S.wt=false;S.st="all";S.crop=null;try{new ResizeObserver(()=>drawSoon()).observe(cv)}catch(e){}
 try{const r=localStorage.getItem("federationGraph.reach");if(RM.includes(r))S.reach=r}catch(e){}
 let th=matchMedia&&matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";try{const v=localStorage.getItem("federationGraph.theme");if(v)th=v==="light"?"light":"dark"}catch(e){}setTheme(th);
 S.d=load();requestAnimationFrame(()=>{fit();save();render()});
