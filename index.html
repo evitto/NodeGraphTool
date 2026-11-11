@@ -384,11 +384,11 @@ if(X.hitL)g.append(s(gm.t,Object.assign({},gm.a,{fill:"none","data-link":l.id,st
 if(l.label&&(S.k>=.9||W.has(l.id)||(foc&&on)))g.append(s("text",{x:gm.mx,y:gm.my-5,"text-anchor":"middle","font-size":11,fill:lcol(l)||T.lt,style:"paint-order:stroke;stroke:"+T.bg+";stroke-width:4px;stroke-linejoin:round"},l.label));return g}
 function bNode(n,X){if(S.exp&&!S.exp.nodes.has(n.id))return null;const[a,b]=dim(n);if(!X.vis(n.x-a,n.y-b,n.x+a,n.y+b))return null;
 const{foc,hit}=X,on=(!foc||foc.has(n.id))&&hit(n)&&(!S.expHl||S.expHl.nodes.has(n.id)),sel=S.sel===n.id||S.ms.has(n.id)||!!(S.expHl&&S.expHl.mark.has(n.id)),src=S.from===n.id,simple=X.lod>0&&!n.kind&&!sel&&!src,g=s("g",simple?{"data-id":n.id,opacity:on?1:(S.expHl?.28:.15),style:"cursor:pointer","data-kind":"node"}:{"data-id":n.id,opacity:on?1:(S.expHl?.28:.15),style:"cursor:pointer",tabindex:0,role:"button","data-kind":n.kind||"node","aria-label":n.name+", "+(n.kind||n.type)});
-if(n.kind==="note"){noteDraw(g,n,a,b,sel);if(S.ports&&X.lod<2)portMarks(g,n,sel);return g}
+if(n.kind==="note"){noteDraw(g,n,a,b,sel);if(S.ports&&X.lod<2)portMarks(g,n,sel&&!S.expHl);return g}
 if(n.kind==="image"){const[ia,ib]=idim(n);imgDraw(g,n,ia,ib,sel);return g}
 if(simple){g.append(s("rect",{x:n.x-a,y:n.y-b,width:2*a,height:2*b,rx:9,fill:n.nbg||T.nd,stroke:colOf(n),"stroke-width":2}));return g}
 g.append(s("rect",{x:n.x-a,y:n.y-b,width:2*a,height:2*b,rx:9,fill:n.nbg||T.nd,stroke:sel?T.sel:src?"#e8b04a":T.ns,"stroke-width":sel||src?2:1}),markEl(markOf(n),n.x-a+14,n.nbp==="m"?n.y:n.nbp==="b"?n.y+b-17:n.y-b+17,colOf(n)),
-S.ed===n.id?document.createComment(""):lab(n,a));if(S.ports&&X.lod<2)portMarks(g,n,sel);if(S.sel===n.id&&!S.mode)g.append(s("circle",{cx:n.x+a,cy:n.y,r:6,fill:T.ac,stroke:T.bg,"stroke-width":2,"data-handle":n.id,style:"cursor:crosshair"}));return g}
+S.ed===n.id?document.createComment(""):lab(n,a));if(S.ports&&X.lod<2)portMarks(g,n,sel&&!S.expHl);if(S.sel===n.id&&!S.mode)g.append(s("circle",{cx:n.x+a,cy:n.y,r:6,fill:T.ac,stroke:T.bg,"stroke-width":2,"data-handle":n.id,style:"cursor:crosshair"}));return g}
 const tmpEl=()=>{const f=N(S.cf);if(!f||!S.tmp)return null;const q=edge(f,S.tmp[0],S.tmp[1],0);return s("line",{x1:q[0],y1:q[1],x2:S.tmp[0],y2:S.tmp[1],stroke:T.ac,"stroke-width":1.5,"stroke-dasharray":"5 4",style:"pointer-events:none"})};
 const boxEl=()=>{const b=S.box,win=b.x1>=b.x0,c=win?T.ac:"#7ed67e";return s("rect",{x:Math.min(b.x0,b.x1),y:Math.min(b.y0,b.y1),width:Math.abs(b.x1-b.x0),height:Math.abs(b.y1-b.y0),fill:c,"fill-opacity":.1,stroke:c,"stroke-width":1/S.k,"stroke-dasharray":win?"none":(5/S.k)+" "+(4/S.k),style:"pointer-events:none"})};
 // marquee / connect preview: update just that one element while dragging
